@@ -14,6 +14,7 @@
   CALLDTMF_FIELDS
   REGSTATE_FIELDS
   REGSTARTING_FIELDS
+  NOTIFY_FIELDS
 #undef X
 
 #define X(kind, literal)                                                       \
@@ -349,6 +350,20 @@ void dumb_cb(uv_async_t* handle) {
            : Nan::New(ev_REGSTARTING_unregistering_symbol))
         };
         acct->emit->Call(acct->handle(), 1, emit_argv);
+        delete args;
+      }
+      break;
+      case EVENT_NOTIFY: {
+        EV_ARGS_NOTIFY* args =
+          reinterpret_cast<EV_ARGS_NOTIFY*>(ev.args);
+        SIPSTERAccount* acct = ev.acct;
+
+        Local<Value> emit_argv[3] = {
+           Nan::New(ev_NOTIFY_notify_symbol),
+           Nan::New(args->waiting),
+           Nan::New<String>(args->info).ToLocalChecked()
+        };
+        acct->emit->Call(acct->handle(), 3, emit_argv);
         delete args;
       }
       break;
@@ -816,6 +831,7 @@ extern "C" {
   CALLDTMF_FIELDS
   REGSTATE_FIELDS
   REGSTARTING_FIELDS
+  NOTIFY_FIELDS
 #undef X
 
     CALLDTMF_DTMF0_symbol.Reset(Nan::New("0").ToLocalChecked());

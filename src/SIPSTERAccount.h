@@ -24,6 +24,7 @@ public:
   virtual void onRegStarted(OnRegStartedParam &prm);
   virtual void onRegState(OnRegStateParam &prm);
   virtual void onIncomingCall(OnIncomingCallParam &iprm);
+  virtual void onMwiInfo(OnMwiInfoParam &prm);
   static NAN_METHOD(New);
   static NAN_METHOD(Modify);
   static NAN_GETTER(ValidGetter);

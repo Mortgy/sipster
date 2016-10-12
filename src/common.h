@@ -75,7 +75,8 @@ using namespace pj;
   X(REGSTATE)                                                                  \
   X(CALLMEDIA)                                                                 \
   X(PLAYEREOF)                                                                 \
-  X(REGSTARTING)
+  X(REGSTARTING)                                                               \
+  X(NOTIFY)
 
 #define EVENT_SYMBOLS                                                          \
   X(INCALL, call)                                                              \
@@ -93,7 +94,8 @@ using namespace pj;
   X(CALLMEDIA, media)                                                          \
   X(PLAYEREOF, eof)                                                            \
   X(REGSTARTING, registering)                                                  \
-  X(REGSTARTING, unregistering)
+  X(REGSTARTING, unregistering)                                                \
+  X(NOTIFY, notify)
 
 enum SIPEvent {
 #define X(kind)                                                                \
@@ -169,12 +171,25 @@ struct EV_ARGS_CALLDTMF {
 #undef X
 };
 
+// NOTIFY event ====================================================
+#define N_NOTIFY_FIELDS 2
+#define NOTIFY_FIELDS                                                          \
+  X(NOTIFY, bool, waiting, Boolean, waiting)                                   \
+  X(NOTIFY, string, info, String, info.c_str())
+struct EV_ARGS_NOTIFY {
+#define X(kind, ctype, name, v8type, valconv) ctype name;
+  NOTIFY_FIELDS
+#undef X
+};
+// =============================================================================
+
 #define X(kind, ctype, name, v8type, valconv)                                  \
   extern Nan::Persistent<String> kind##_##name##_symbol;
   INCALL_FIELDS
   CALLDTMF_FIELDS
   REGSTATE_FIELDS
   REGSTARTING_FIELDS
+  NOTIFY_FIELDS
 #undef X
 
 // start generic event-related definitions =====================================

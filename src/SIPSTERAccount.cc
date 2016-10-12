@@ -7,6 +7,7 @@ Nan::Persistent<FunctionTemplate> SIPSTERAccount_constructor;
 
 regex_t fromuri_regex;
 regex_t touri_regex;
+regex_t voiceMessage_regex;
 
 SIPSTERAccount::SIPSTERAccount() {
 }
@@ -62,6 +63,20 @@ AccountConfig SIPSTERAccount::genConfig(Local<Object> acct_obj) {
     JS2PJ_UINT(reg_obj, proxyUse, regConfig);
 
     acct_cfg.regConfig = regConfig;
+  }
+  val = acct_obj->Get(Nan::New("mwiConfig").ToLocalChecked());
+  if (val->IsObject()) {
+    AccountMwiConfig mwiConfig;
+    Local<Object> mwi_obj = val->ToObject();
+
+    val = mwi_obj->Get(Nan::New("enabled").ToLocalChecked());
+    if (val->IsBoolean()) {
+      mwiConfig.enabled = val->BooleanValue();
+    }
+
+    JS2PJ_UINT(mwi_obj, expirationSec, mwiConfig);
+
+    acct_cfg.mwiConfig = mwiConfig;
   }
   val = acct_obj->Get(Nan::New("sipConfig").ToLocalChecked());
   if (val->IsObject()) {
@@ -382,6 +397,35 @@ void SIPSTERAccount::onRegState(OnRegStateParam &prm) {
   ENQUEUE_EVENT(ev);
 }
 
+void SIPSTERAccount::onMwiInfo(OnMwiInfoParam &prm) {
+  SETUP_EVENT(NOTIFY);
+  ev.acct = this;
+
+  const char* msgcstr = prm.rdata.wholeMsg.c_str();
+  int res = 0;
+
+  // extract message waiting indicator
+  if (strstr(msgcstr, "Messages-Waiting: no") != nullptr) {
+    args->waiting = false;
+  } else if (strstr(msgcstr, "Messages-Waiting: yes") != nullptr)   {
+    args->waiting = true;
+  } else {
+    // not expected message so just return
+    return;
+  }
+
+  // extract the number of messages 
+  args->info = "";
+  regmatch_t match[2];
+  res = regexec(&voiceMessage_regex, msgcstr, 2, match, 0);
+  if (res == 0) {
+    args->info = string(msgcstr + match[1].rm_so,
+                        match[1].rm_eo - match[1].rm_so);
+  }
+
+  ENQUEUE_EVENT(ev);
+}
+
 void SIPSTERAccount::onIncomingCall(OnIncomingCallParam &iprm) {
   SIPSTERCall* call = new SIPSTERCall(*this, iprm.callId);
   CallInfo ci = call->getInfo();
@@ -681,6 +725,17 @@ void SIPSTERAccount::Initialize(Handle<Object> target) {
     errbuf[0] = '\0';
     regerror(res, &touri_regex, errbuf, 128);
     fprintf(stderr, "Could not compile 'To:' URI regex: %s\n", errbuf);
+    exit(1);
+  }
+
+  res = regcomp(&voiceMessage_regex,
+                "^Voice-Message: (.*)",
+                REG_ICASE|REG_EXTENDED|REG_NEWLINE);
+  if (res != 0) {
+    char errbuf[128];
+    errbuf[0] = '\0';
+    regerror(res, &voiceMessage_regex, errbuf, 128);
+    fprintf(stderr, "Could not compile 'Voice-Message:' regex: %s\n", errbuf);
     exit(1);
   }
 }
