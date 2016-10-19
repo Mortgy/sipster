@@ -64,20 +64,6 @@ AccountConfig SIPSTERAccount::genConfig(Local<Object> acct_obj) {
 
     acct_cfg.regConfig = regConfig;
   }
-  val = acct_obj->Get(Nan::New("mwiConfig").ToLocalChecked());
-  if (val->IsObject()) {
-    AccountMwiConfig mwiConfig;
-    Local<Object> mwi_obj = val->ToObject();
-
-    val = mwi_obj->Get(Nan::New("enabled").ToLocalChecked());
-    if (val->IsBoolean()) {
-      mwiConfig.enabled = val->BooleanValue();
-    }
-
-    JS2PJ_UINT(mwi_obj, expirationSec, mwiConfig);
-
-    acct_cfg.mwiConfig = mwiConfig;
-  }
   val = acct_obj->Get(Nan::New("sipConfig").ToLocalChecked());
   if (val->IsObject()) {
     AccountSipConfig sipConfig;
